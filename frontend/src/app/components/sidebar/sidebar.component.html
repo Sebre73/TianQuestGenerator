@@ -1,0 +1,18 @@
+<div class="sidebar">
+
+  <nav class="sidebar-nav">
+    <a routerLink="/">Home</a>
+  </nav>
+
+  <div class="sidebar-spacer"></div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-user">
+    <div class="sidebar-user-email">
+      {{ userEmail }}
+    </div>
+    <button class="sidebar-logout" (click)="logout()">Logout</button>
+  </div>
+
+</div>

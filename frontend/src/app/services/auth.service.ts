@@ -1,80 +1,67 @@
-import {Injectable} from '@angular/core';
-import {AuthRequest} from '../dtos/auth-request';
-import {Observable} from 'rxjs';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {tap} from 'rxjs/operators';
-import {jwtDecode} from 'jwt-decode';
-import {Globals} from '../global/globals';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { AuthRequest } from '../dtos/auth-request';
+import { Globals } from '../global/globals';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-  private authBaseUri: string = this.globals.backendUri + '/authentication';
+  private readonly authBaseUri: string;
 
-  constructor(private httpClient: HttpClient, private globals: Globals) {
+  constructor(
+    private httpClient: HttpClient,
+    private globals: Globals
+  ) {
+    this.authBaseUri = this.globals.backendUri + '/authentication';
   }
 
   /**
-   * Login in the user. If it was successful, a valid JWT token will be stored
-   *
-   * @param authRequest User data
+   * Logs in the user and stores the JWT token and email on success.
    */
   loginUser(authRequest: AuthRequest): Observable<string> {
-    return this.httpClient.post(this.authBaseUri, authRequest, {responseType: 'text'})
+    return this.httpClient
+      .post(this.authBaseUri, authRequest, { responseType: 'text' })
       .pipe(
-        tap((authResponse: string) => this.setToken(authResponse))
+        tap(token => this.storeLogin(authRequest.email, token))
       );
   }
 
+  /**
+   * Returns true if a token is present.
+   * Token validity itself is enforced by the backend.
+   */
+  isLoggedIn(): boolean {
+    return !!localStorage.getItem('authToken');
+  }
 
   /**
-   * Check if a valid JWT token is saved in the localStorage
+   * Logs out the user and clears local session data.
    */
-  isLoggedIn() {
-    return !!this.getToken() && (this.getTokenExpirationDate(this.getToken()).valueOf() > new Date().valueOf());
-  }
-
-  logoutUser() {
-    console.log('Logout');
+  logoutUser(): void {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userEmail');
   }
 
-  getToken() {
+  /**
+   * Returns the stored JWT token.
+   */
+  getToken(): string | null {
     return localStorage.getItem('authToken');
   }
 
   /**
-   * Returns the user role based on the current token
+   * Returns the email of the logged-in user (for UI purposes).
    */
-  getUserRole() {
-    if (this.getToken() != null) {
-      const decoded: any = jwtDecode(this.getToken());
-      const authInfo: string[] = decoded.rol;
-      if (authInfo.includes('ROLE_ADMIN')) {
-        return 'ADMIN';
-      } else if (authInfo.includes('ROLE_USER')) {
-        return 'USER';
-      }
-    }
-    return 'UNDEFINED';
+  getUserEmail(): string | null {
+    return localStorage.getItem('userEmail');
   }
 
-  private setToken(authResponse: string) {
-    localStorage.setItem('authToken', authResponse);
+  private storeLogin(email: string, token: string): void {
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('userEmail', email);
   }
-
-  private getTokenExpirationDate(token: string): Date {
-
-    const decoded: any = jwtDecode(token);
-    if (decoded.exp === undefined) {
-      return null;
-    }
-
-    const date = new Date(0);
-    date.setUTCSeconds(decoded.exp);
-    return date;
-  }
-
 }

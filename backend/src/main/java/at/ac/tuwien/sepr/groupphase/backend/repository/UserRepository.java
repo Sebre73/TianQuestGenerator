@@ -1,32 +1,38 @@
 package at.ac.tuwien.sepr.groupphase.backend.repository;
 
 import at.ac.tuwien.sepr.groupphase.backend.entity.ApplicationUser;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
 
-//TODO: replace this class with a correct ApplicationUser JPARepository implementation
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * In-memory user repository.
+ *
+ * <p>This is a simplified repository implementation without persistence.
+ * Users are stored in memory for the lifetime of the application.
+ */
 @Repository
 public class UserRepository {
 
-    private final ApplicationUser user;
-    private final ApplicationUser admin;
+    private final Map<String, ApplicationUser> usersByEmail = new ConcurrentHashMap<>();
 
-    @Autowired
-    public UserRepository(PasswordEncoder passwordEncoder) {
-        user = new ApplicationUser("user@email.com", passwordEncoder.encode("password"), false);
-        admin = new ApplicationUser("admin@email.com", passwordEncoder.encode("password"), true);
-    }
-
+    /**
+     * Finds a user by email address.
+     *
+     * @param email the email address
+     * @return the user or {@code null} if not found
+     */
     public ApplicationUser findUserByEmail(String email) {
-        if (email.equals(user.getEmail())) {
-            return user;
-        }
-        if (email.equals(admin.getEmail())) {
-            return admin;
-        }
-        return null; // In this case null is returned to fake Repository behavior
+        return usersByEmail.get(email);
     }
 
-
+    /**
+     * Stores a new user in memory.
+     *
+     * @param user the user to store
+     */
+    public void addUser(ApplicationUser user) {
+        usersByEmail.put(user.getEmail(), user);
+    }
 }
